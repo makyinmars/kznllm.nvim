@@ -7,6 +7,7 @@ local group = api.nvim_create_augroup('LLM_AutoGroup', { clear = true })
 BufferManager.state = {
   buffers = {}, -- Map of buffer_id -> buffer state
   ns_id = api.nvim_create_namespace('kznllm_ns'),
+  sidebar_buf_id = nil, -- Buffer ID for the sidebar
 }
 
 ---@class BufferState
@@ -50,6 +51,37 @@ function BufferManager:create_scratch_buffer()
   api.nvim_set_option_value('breakindent', true, { win = 0 })
 
   return buf_id
+end
+
+---Creates a sidebar buffer for context/history
+---@return integer buf_id
+function BufferManager:create_sidebar_buffer()
+  if self.state.sidebar_buf_id and api.nvim_buf_is_valid(self.state.sidebar_buf_id) then
+    return self.state.sidebar_buf_id
+  end
+
+  local buf_id = api.nvim_create_buf(false, true)
+  self.state.sidebar_buf_id = buf_id
+
+  api.nvim_set_option_value('filetype', 'markdown', { buf = buf_id })
+  api.nvim_set_option_value('swapfile', false, { buf = buf_id })
+
+  -- Open the sidebar in a vertical split
+  vim.cmd('vsplit')
+  api.nvim_set_current_buf(buf_id)
+  api.nvim_set_option_value('wrap', true, { win = 0 })
+  api.nvim_set_option_value('linebreak', true, { win = 0 })
+  api.nvim_set_option_value('breakindent', true, { win = 0 })
+
+  return buf_id
+end
+
+---Write content to the sidebar buffer
+---@param content string Content to write
+function BufferManager:write_to_sidebar(content)
+  local buf_id = self:create_sidebar_buffer()
+  local lines = vim.split(content, '\n')
+  api.nvim_buf_set_lines(buf_id, -1, -1, false, lines)
 end
 
 ---Get buffer context without saving

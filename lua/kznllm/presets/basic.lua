@@ -58,9 +58,9 @@ local function NewBaseTask(config)
         local state = { start = os.time(), last_updated = nil }
         p:report({ message = ('%s'):format(config.description) })
         local message_fn = opts.progress_message_fn and opts.progress_message_fn
-            or function(s)
-              return 'yapped'
-            end
+          or function(s)
+            return 'yapped'
+          end
         local message = message_fn(state)
         local _ = buffer_manager:create_streaming_job(args, provider.handle_sse_stream, function()
           local progress_message = message_fn(state)
@@ -75,6 +75,10 @@ local function NewBaseTask(config)
         end, function()
           p:finish()
         end)
+
+        -- Update the sidebar with the history
+        local history_entry = string.format('Query: %s\nResponse: %s\n', user_query, 'Response will be updated here.')
+        buffer_manager:write_to_sidebar(history_entry)
       end)
     end,
   }
@@ -110,30 +114,30 @@ local anthropic_system_template = utils.join_path({ anthropic_template_path, 'fi
 local anthropic_user_template = utils.join_path({ anthropic_template_path, 'fill_mode_user_prompt.xml.jinja' })
 
 local BasicAnthropicPreset = anthropic.AnthropicPresetBuilder
-    :new()
-    :add_system_prompts({
-      {
-        type = 'text',
-        path = anthropic_system_template,
-        cache_control = { type = 'ephemeral' },
-      },
-    })
-    :add_message_prompts({
-      { type = 'text', role = 'user', path = anthropic_user_template },
-    })
+  :new()
+  :add_system_prompts({
+    {
+      type = 'text',
+      path = anthropic_system_template,
+      cache_control = { type = 'ephemeral' },
+    },
+  })
+  :add_message_prompts({
+    { type = 'text', role = 'user', path = anthropic_user_template },
+  })
 
 local openai_template_path = utils.join_path({ utils.TEMPLATE_PATH, 'openai' })
 local openai_system_template = utils.join_path({ openai_template_path, 'fill_mode_system_prompt.xml.jinja' })
 local openai_user_template = utils.join_path({ openai_template_path, 'fill_mode_user_prompt.xml.jinja' })
 
 local BasicOpenAIPreset = openai.OpenAIPresetBuilder
-    :new()
-    :add_system_prompts({
-      { type = 'text', path = openai_system_template },
-    })
-    :add_message_prompts({
-      { type = 'text', role = 'user', path = openai_user_template },
-    })
+  :new()
+  :add_system_prompts({
+    { type = 'text', path = openai_system_template },
+  })
+  :add_message_prompts({
+    { type = 'text', role = 'user', path = openai_user_template },
+  })
 
 --- doesn't support system prompt
 local BasicOpenAIReasoningPreset = openai.OpenAIPresetBuilder:new():add_message_prompts({
